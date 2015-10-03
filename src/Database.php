@@ -117,7 +117,7 @@ class Database
    * @return integer
    * @throws DuplicateKeySQLException
    */
-  public static function insert(ModelObject & $object) {
+  public function insert(ModelObject & $object) {
     $table = $object->table();
 
     //Prepare the list of inserted fields and values
@@ -147,7 +147,7 @@ class Database
       }
       else {
         $insertFields[] = '`' . str_replace('`', '', $dirtyField) . '`';
-        $insertValues[] = self::pdo()->quote($insertValue);
+        $insertValues[] = $this->getPdo()->quote($insertValue);
       }
     }
 
@@ -163,10 +163,10 @@ class Database
 
 
     $throw = function (\PDOException $ex = null) use ($query) {
-      $errorCode = self::pdo()->errorInfo() [1];
-      $errorMsg = self::pdo()->errorInfo() [2];
+      $errorCode = $this->getPdo()->errorInfo() [1];
+      $errorMsg = $this->getPdo()->errorInfo() [2];
 
-      $errCodeDuplicateKey = constant(__NAMESPACE__.'\\dialects\\'.self::get()->getDriverName().'\\ErrorCodes::DUPLICATE_KEY');
+      $errCodeDuplicateKey = constant(__NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\ErrorCodes::DUPLICATE_KEY');
 
       if ($errorCode == $errCodeDuplicateKey) {
         throw new DuplicateKeySQLException($query, $errorMsg, $ex);
@@ -175,14 +175,14 @@ class Database
     };
 
     try {
-      if (false === self::pdo()->exec($query)) {
+      if (false === $this->getPdo()->exec($query)) {
         $throw ();
       }
     } catch (\PDOException $ex) {
       $throw ($ex);
     }
 
-    $insertID = self::pdo()->lastInsertId();
+    $insertID = $this->getPdo()->lastInsertId();
     $object->clean($insertID);
 
     //Return the inserted id
@@ -411,7 +411,7 @@ class Database
    * to be used in a SELECT clause.
    *
    * @param string $tablePrefix If specified, each item in the selected list is fully qualified with this table prefix.
-   * @return comma-separated list of fields, suitable for the SELECT clause of a MySQL query.
+   * @return string comma-separated list of fields, suitable for the SELECT clause of a MySQL query.
    */
   public static function selectClause($fieldsMap, $tablePrefix = null, $aliasPrefix = null) {
     $fields = array_keys($fieldsMap);
