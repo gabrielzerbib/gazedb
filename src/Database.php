@@ -338,7 +338,7 @@ class Database
    * @param array $criteria An assoc array <field, matching value>, conveying specific criteria for the where clause.
    * @return boolean
    */
-  public static function update(ModelObject $object, $criteria = null) {
+  public function update(ModelObject $object, $criteria = null) {
     $table = $object->table();
 
     //Prepare the SET clause
@@ -355,7 +355,7 @@ class Database
       if(null === $setValue)
         $setValue = 'null';
       else
-        $setValue = self::pdo()->quote($setValue);
+        $setValue = $this->getPdo()->quote($setValue);
       $setFields[] = "`$dirtyField` = $setValue";
     }
 
@@ -380,7 +380,7 @@ class Database
         $whereCompareAndValue = " = $whereValue";
       }
       else {
-        $whereCompareAndValue = " = " . self::pdo()->quote($whereValue);
+        $whereCompareAndValue = " = " . $this->getPdo()->quote($whereValue);
       }
       $whereFields[] = "`$whereKey` $whereCompareAndValue";
     }
@@ -395,7 +395,7 @@ class Database
         $whereList
     ";
 
-    $affectedRows = self::pdo()->exec($query);
+    $affectedRows = $this->getPdo()->exec($query);
 
     //Return Success if one and only one record was modified.
     if($affectedRows == 1) {
