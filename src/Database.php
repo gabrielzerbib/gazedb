@@ -11,7 +11,7 @@ namespace gazedb;
  * the bootstrap of the app injects the creds without
  * performing an actual connection, and then
  * anywhere in the app, when the DB is needed,
- * just invoke Database::pdo()
+ * just use ->get()->pdo()
  */
 class Database
 {
@@ -65,18 +65,10 @@ class Database
     $this->password = $password;
   }
 
-  /*
-     * @return \PDO
-     */
-  public static function pdo($connectionName = '')
-  {
-    return self::get($connectionName)->getPdo();
-  }
-
   /**
    * @return \PDO
    */
-  public function getPdo()
+  public function pdo()
   {
     if (null == $this->pdo) {
       $this->pdo = new \PDO($this->dsn, $this->username, $this->password);
@@ -128,7 +120,7 @@ class Database
       }
       else {
         $insertFields[] = '`' . str_replace('`', '', $dirtyField) . '`';
-        $insertValues[] = $this->getPdo()->quote($insertValue);
+        $insertValues[] = $this->pdo()->quote($insertValue);
       }
     }
 
@@ -144,8 +136,8 @@ class Database
 
 
     $throw = function (\PDOException $ex = null) use ($query) {
-      $errorCode = $this->getPdo()->errorInfo() [1];
-      $errorMsg = $this->getPdo()->errorInfo() [2];
+      $errorCode = $this->pdo()->errorInfo() [1];
+      $errorMsg = $this->pdo()->errorInfo() [2];
 
       $errCodeDuplicateKey = constant(__NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\ErrorCodes::DUPLICATE_KEY');
 
@@ -156,14 +148,14 @@ class Database
     };
 
     try {
-      if (false === $this->getPdo()->exec($query)) {
+      if (false === $this->pdo()->exec($query)) {
         $throw ();
       }
     } catch (\PDOException $ex) {
       $throw ($ex);
     }
 
-    $insertID = $this->getPdo()->lastInsertId();
+    $insertID = $this->pdo()->lastInsertId();
     $object->clean($insertID);
 
     //Return the inserted id
@@ -213,7 +205,7 @@ class Database
       else if (is_numeric($whereValue) && (! is_string($whereValue)))
         $whereCompareAndValue = " = $whereValue";
       else
-        $whereCompareAndValue = " = " . $this->getPdo()->quote($whereValue);
+        $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
       $whereFields[] = "`$table`.`$whereKey` $whereCompareAndValue";
     }
     $whereList = implode(' and ', $whereFields);
@@ -242,7 +234,7 @@ class Database
       limit 2
     ";
 
-    $recordset = $this->getPdo()->query($query);
+    $recordset = $this->pdo()->query($query);
 
 
     $record = $recordset->fetch(\PDO::FETCH_ASSOC);
@@ -293,7 +285,7 @@ class Database
         $whereCompareAndValue = ' is null';
       }
       else {
-        $whereCompareAndValue = " = " . $this->getPdo()->quote($whereValue);
+        $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
       }
       $whereFields[] = "`$table`.`$whereKey` $whereCompareAndValue";
     }
@@ -306,7 +298,7 @@ class Database
         $whereList
     ";
 
-    $rowCount = $this->getPdo()->exec($query);
+    $rowCount = $this->pdo()->exec($query);
     return ($rowCount == 0 ? false : true);
   }
 
@@ -336,7 +328,7 @@ class Database
       if(null === $setValue)
         $setValue = 'null';
       else
-        $setValue = $this->getPdo()->quote($setValue);
+        $setValue = $this->pdo()->quote($setValue);
       $setFields[] = "`$dirtyField` = $setValue";
     }
 
@@ -361,7 +353,7 @@ class Database
         $whereCompareAndValue = " = $whereValue";
       }
       else {
-        $whereCompareAndValue = " = " . $this->getPdo()->quote($whereValue);
+        $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
       }
       $whereFields[] = "`$whereKey` $whereCompareAndValue";
     }
@@ -376,7 +368,7 @@ class Database
         $whereList
     ";
 
-    $affectedRows = $this->getPdo()->exec($query);
+    $affectedRows = $this->pdo()->exec($query);
 
     //Return Success if one and only one record was modified.
     if($affectedRows == 1) {
@@ -391,10 +383,12 @@ class Database
    * Returns the comma-separated list of fields of the model object,
    * to be used in a SELECT clause.
    *
+   * @param array $fieldsMap
    * @param string $tablePrefix If specified, each item in the selected list is fully qualified with this table prefix.
+   * @param string $aliasPrefix
    * @return string comma-separated list of fields, suitable for the SELECT clause of a MySQL query.
    */
-  public static function selectClause($fieldsMap, $tablePrefix = null, $aliasPrefix = null) {
+  public static function selectClause(array $fieldsMap, $tablePrefix = null, $aliasPrefix = null) {
     $fields = array_keys($fieldsMap);
     for($i = 0; $i < count($fields); ++$i) {
       $initialName = $fields[$i];
@@ -414,6 +408,6 @@ class Database
 
   public function getDriverName()
   {
-    return $this->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+    return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
   }
 }
