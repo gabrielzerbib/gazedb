@@ -50,38 +50,19 @@ class Database
   }
 
 
-  public static function injectIniFile($iniFilename, $section)
-  {
-    if (('' == $iniFilename) || (!file_exists($iniFilename))) {
-      throw new \Exception('Missing DB config file.');
-    }
-
-    $config = parse_ini_file($iniFilename, true);
-
-
-    self::get()->dsn = $config[$section]['dsn'];
-    self::get()->username = $config[$section]['username'];
-    self::get()->password = $config[$section]['password'];
-  }
-
-
-  public static function injectPdo(\PDO $pdo, $connectionName = '') {
-    self::get($connectionName)->pdo = $pdo;
-  }
-
   /**
-   * This static injector is mainly useful for Unit Tests,
-   * until we implement a proper Dependency Injection container in the project.
+   * This is how you pass the DSN to the connection. The connection itself is not attempted until
+   * the first effective use of the PDO object.
    *
    * @param $dsn
    * @param $username
    * @param $password
    */
-  public static function injectDsn($dsn, $username, $password)
+  public function injectDsn($dsn, $username, $password)
   {
-    self::get()->dsn = $dsn;
-    self::get()->username = $username;
-    self::get()->password = $password;
+    $this->dsn = $dsn;
+    $this->username = $username;
+    $this->password = $password;
   }
 
   /*
