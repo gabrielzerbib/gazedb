@@ -287,9 +287,9 @@ class Database
    * @throws MoreThanOneObjectException
    * @throws ObjectNotFoundException
    */
-  public static function load(ModelObject $object)
+  public function load(ModelObject $object)
   {
-    return self::get()->loadWithOptions($object);
+    return $this->loadWithOptions($object);
   }
 
   /**
