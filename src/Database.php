@@ -300,7 +300,7 @@ class Database
    * @param ModelObject $object
    * @return boolean
    */
-  public static function delete(& $object) {
+  public function delete(& $object) {
     $object->clean();
     $table = $object->table();
 
@@ -312,7 +312,7 @@ class Database
         $whereCompareAndValue = ' is null';
       }
       else {
-        $whereCompareAndValue = " = " . self::pdo()->quote($whereValue);
+        $whereCompareAndValue = " = " . $this->getPdo()->quote($whereValue);
       }
       $whereFields[] = "`$table`.`$whereKey` $whereCompareAndValue";
     }
@@ -325,7 +325,7 @@ class Database
         $whereList
     ";
 
-    $rowCount = self::pdo()->exec($query);
+    $rowCount = $this->getPdo()->exec($query);
     return ($rowCount == 0 ? false : true);
   }
 
