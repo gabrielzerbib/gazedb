@@ -410,4 +410,14 @@ class Database
   {
     return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
   }
+
+
+  /**
+   * @return StructureManager
+   */
+  public function getStructureManager()
+  {
+    $clazz = __NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\DialectStructureManager';
+    return new $clazz;
+  }
 }
