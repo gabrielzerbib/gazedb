@@ -418,6 +418,6 @@ class Database
   public function getStructureManager()
   {
     $clazz = __NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\DialectStructureManager';
-    return new $clazz;
+    return new $clazz ($this);
   }
 }

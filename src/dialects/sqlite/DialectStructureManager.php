@@ -63,6 +63,5 @@ class DialectStructureManager extends StructureManager
       create table ".$modelClass::table()." (".$tableDef.")
     ";
     $this->database->pdo()->query($query);
-
   }
 }
