@@ -23,6 +23,7 @@ annotation-based grammar to declare the relationship between your tables.
 
 What gazedb **does** provide:
 
+- Simple [PDO](http://php.net/manual/en/book.pdo.php) wrapper
 - Normative constant-based notation for tables and columns names,
 - Simple helpers for single-object CRUD operations,
 - Simple syntax to assist in creating *your own real SQL queries* in a reusable way.
@@ -81,6 +82,7 @@ class Employee extends ModelObject
   public const ID = 'employee_id';
   public const LASTNAME = 'lastname';
   public const SALARY = 'salary';
+  public const DEPARTMENT = 'dept_id';
 
 ~~~~
 
@@ -100,7 +102,8 @@ public static function mapFields()
   return [
     self::ID => null,
     self::LASTNAME => '',
-    self::SALARY => 0
+    self::SALARY => 0,
+    self::DEPARTMENT => null
   ];
 }
 ~~~~
@@ -163,11 +166,41 @@ You write typical queries in your code by taking benefit from the `const` names.
  $query = "
    select
      Employee.".Employee::ID.",
-     Employee.".Employee::LASTNAME."
+     Employee.".Employee::LASTNAME.",
+     Dept.".Department::FLOOR."
    from
      ".Employee::table()." Employee
+     inner join ".Department::table()." Dept
+       on Dept.".Department::ID." = Employee.".Employee::DEPARTMENT."
    where
      Employee.".Employee::SALARY." > 10000
  ";
  ~~~~
- 
+
+## Database object
+
+gazedb lets you handle several simultaneous connections to different data sources.
+It uses the injectable Singleton pattern, with named instances.
+
+~~~~php
+$db = Database::get();
+$archiveDB = Database::get('archive');
+~~~~
+
+You must invoke `injectDsn` on a Database instance, to specify the PDO DSN string.
+
+Then, you manipulate the underlying PDO instance directly, with:
+
+~~~~php
+$db->pdo()
+~~~~
+
+which returns your plain and well-known PDO object, for you to execuyte:
+
+~~~~php
+$recordset = $db->pdo()->query($query);
+~~~~
+
+### CRUD operations
+
+...
