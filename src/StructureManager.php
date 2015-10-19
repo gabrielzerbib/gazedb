@@ -12,4 +12,5 @@ abstract class StructureManager
   }
 
   public abstract function createTable($className);
+  public abstract function dropTable($className);
 }

@@ -64,4 +64,19 @@ class DialectStructureManager extends StructureManager
     ";
     $this->database->pdo()->query($query);
   }
+
+  public function dropTable($modelClass)
+  {
+    // Check that argument is a class name of a ModelObject subclass:
+    $reflector = new ReflectionClass($modelClass);
+    if (! $reflector->isSubclassOf(ModelObject::clazz()) ) {
+      throw new \Exception('Invalid call of dropTable: must pass class name of ModelObject subclass.');
+    }
+
+    // Obtain name of table:
+    $tableName = $reflector->getMethod('table')->invoke(null);
+
+    $query = "drop table $tableName";
+    $this->database->pdo()->query($query);
+  }
 }
