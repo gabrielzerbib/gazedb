@@ -195,7 +195,7 @@ Then, you manipulate the underlying PDO instance directly, with:
 $db->pdo()
 ~~~~
 
-which returns your plain and well-known PDO object, for you to execuyte:
+which returns your plain and well-known PDO object, for you to execute:
 
 ~~~~php
 $recordset = $db->pdo()->query($query);
