@@ -89,7 +89,10 @@ abstract class ModelObject {
      * Any subclass MUST implement.
      * @return string
      */
-    protected static abstract function tableName();
+    protected static function tableName()
+    {
+        throw new IncompleteModelClassException(get_called_class());
+    }
 
     public static function table() {
         return static::tableName();
