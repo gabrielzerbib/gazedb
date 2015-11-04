@@ -90,7 +90,7 @@ class Database
    * @return integer
    * @throws DuplicateKeySQLException
    */
-  public function insert(ModelObject & $object) {
+  public function insert(ModelObject $object) {
     $table = $object->table();
 
     //Prepare the list of inserted fields and values
