@@ -162,20 +162,29 @@ public function mapAutoIncrement() {
 
 You write typical queries in your code by taking benefit from the `const` names.
 
- ~~~~php
- $query = "
-   select
-     Employee.".Employee::ID.",
-     Employee.".Employee::LASTNAME.",
-     Dept.".Department::FLOOR."
-   from
-     ".Employee::table()." Employee
-     inner join ".Department::table()." Dept
-       on Dept.".Department::ID." = Employee.".Employee::DEPARTMENT."
-   where
-     Employee.".Employee::SALARY." > 10000
- ";
- ~~~~
+~~~~php
+$query = "
+  select
+    Employee.".Employee::ID.",
+    Employee.".Employee::LASTNAME.",
+    Dept.".Department::FLOOR."
+  from
+    ".Employee::table()." Employee
+    inner join ".Department::table()." Dept
+      on Dept.".Department::ID." = Employee.".Employee::DEPARTMENT."
+  where
+    Employee.".Employee::SALARY." > 10000
+";
+~~~~
+
+So, you write real, valid SQL, in the target dialect of your choice (i.e. specific
+syntax and functions of the actual SQL engine).
+
+You may use the usual parameter binding that comes with PDO (the `:param` syntax) and
+you should take care of SQL injection protection.
+
+The only benefit you gain from writing your queries using the above recommendation, is
+consistency and syntax checking on the names of tables and fields.
 
 ## Database object
 
@@ -187,7 +196,7 @@ $db = Database::get();
 $archiveDB = Database::get('archive');
 ~~~~
 
-You must invoke `injectDsn` on a Database instance, to specify the PDO DSN string.
+You must invoke `injectDsn($dsnString, $username, $password)` on a Database instance, to specify the PDO connection string.
 
 Then, you manipulate the underlying PDO instance directly, with:
 
@@ -203,4 +212,64 @@ $recordset = $db->pdo()->query($query);
 
 ### CRUD operations
 
-...
+In addition to the underlying PDO operations, made directly on the $database->pdo() instance,
+**gazedb** offers simple CRUD auto-mapping methods for those Model objects that map a primary key.
+
+#### Load
+
+~~~~php
+// "new" does not create anything in DB
+$employee = new Employee();
+
+// Specify the key value for the employee you wish to load:
+$employee->setId(12);
+
+// Fetch the record and auto-set all the mapped columns (see mapFields() method)
+$database->load($employee);
+
+echo $employee->getLastname();
+~~~~
+
+
+In case the record could not be found for specified primary key, the `Database::load` method
+will throw an `ObjectNotFoundException`.
+
+#### Update
+
+Once you have a populated object, you can modify any field with its mutators, and save it back
+to the database with the `udpate` method.
+
+~~~~php
+$employee->setFloor(8);
+$database->update($employee);
+~~~~
+
+The `update` method produces a query which only changes the values you modified explicitly,
+leaving all the other fields untouched.
+
+*Notice*: gazedb does not check the state of the object before storing it back to database.
+If the record was changed by another process or connection, your **udpate** statement will
+still be issued without your knowing it.
+
+Likewise, `update` does not re-fetch the object's fields if they were changed in database since
+your previous call to `load`.
+
+#### Insert
+
+~~~~php
+$employee = new Employee();
+$employee
+  ->setLastname('Smith')
+  ->setFloor(10)
+  ->setSalary(60000);
+
+$database->insert($employee);
+
+echo $employee->getId();
+~~~~
+
+The `insert` method fires an insert query, optionally assigning the auto-increment value
+to the mapped auto-increment field if you specified one in your Model object.
+
+After the `insert` call, your object is considered "clean" and you can modify its values again
+through the mutators, before performing an `update` on the modified values only.
