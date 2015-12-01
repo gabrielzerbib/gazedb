@@ -18,6 +18,12 @@ class ClassGeneratorCommand extends  Command
       ->setName('class:generate')
       ->setDescription('Generate PHP class from given table.')
       ->addOption(
+        'desc',
+        null,
+        InputOption::VALUE_NONE,
+        'Do not connect, use DESCRIBE result from stdin instead.'
+      )
+      ->addOption(
         'dsn',
         null,
         InputOption::VALUE_REQUIRED,
@@ -58,14 +64,23 @@ class ClassGeneratorCommand extends  Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+
+    $desc = $input->getOption('desc');
+
+
     $dsn = $input->getOption('dsn');
-    if (! $dsn) {
+    if ((! $dsn) && (! $desc)) {
       $output->writeln('Missing <error>dsn</error> option.');
       return;
     }
 
+    if ($dsn && $desc) {
+      $output->writeln('Cannot use both <error>dsn</error> and <error>desc</error> options.');
+      return;
+    }
+
     $username = $input->getOption('username');
-    if (! $username) {
+    if ((! $username) && $dsn) {
       $output->writeln('Missing <error>username</error> option.');
       return;
     }
@@ -98,27 +113,71 @@ class ClassGeneratorCommand extends  Command
 
 
 
+    if ($dsn) {
+      // If a DSN is provided, let's connect to the database and issue a DESC statement
+      $output->write('Connecting to DB...');
+      $db = Database::get();
+      $db->injectDsn($dsn, $username, $password);
+      $db->pdo()->query('select now()');
+      $output->writeln('[<info>OK</info>]');
 
-    $output->write  ('Connecting to DB...');
-    $db = Database::get();
-    $db->injectDsn($dsn, $username, $password);
-    $db->pdo()->query('select now()');
-    $output->writeln('[<info>OK</info>]');
+      $output->write('Analyzing table...');
+      $rs = $db->pdo()->query('describe ' . $table);
+      $tableDef = $rs->fetchAll();
+      $output->writeln('[<info>OK</info>]');
+    }
 
-    $output->write('Analyzing table...');
-    $rs = $db->pdo()->query('describe ' . $table);
-    $tableDef = $rs->fetchAll();
-    $output->writeln('[<info>OK</info>]');
+    else {
+      // Table DESC result comes from stdin
+      $stdin = file('php://stdin');
+      $fieldsPos = null;
+      $tableDef = [];
 
-//    $output->writeln(print_r($tableDef, true));
+      foreach ($stdin as $line) {
+        $line = trim($line);
 
-    // Extract the field names :
+        // The first line indicates the column names
+        // Let's split them and capture the starting position of each within string
+        if (null === $fieldsPos) {
+          $fieldsPos = preg_split('#[[:blank:]]+#', $line, 0, PREG_SPLIT_OFFSET_CAPTURE);
+          // array of 0=>colname, 1=>startPos
+          continue;
+        }
 
+        // Separator line
+        // Right after the column headers, comes a line with many ------
+        if (substr($line, 0, 1) == '-') {
+          continue;
+        }
+
+        // Regular line: a table field and its definitions.
+        // We know the starting position of the value of each property,
+        // so we can extract the properties and populate the $tableDef structure
+        // as if it came directly from PDO.
+        $values = [];
+        foreach ($fieldsPos as $fieldPos) {
+          $columnTitle = $fieldPos[0];
+          $startPos = $fieldPos[1];
+
+          $value = preg_replace('#[[:blank:]].*$#', '', substr($line, $startPos));
+          $values[$columnTitle] = $value;
+        }
+        $tableDef []= $values;
+      }
+    }
+
+
+
+
+
+
+    // Prepare to learn some useful info about the table
     $modelInfo = [
       'columns' => [],
       'pk' => [],
       'auto' => null
     ];
+
 
     foreach ($tableDef as $column) {
       $fieldName = $column['Field'];
@@ -176,6 +235,13 @@ class ClassGeneratorCommand extends  Command
     }
 
     $output->writeln('');
+
+    //
+    // tableName
+    //
+    $output->writeln('  protected static function tableName() { return \''.$table.'\'; }');
+    $output->writeln('');
+
 
     //
     // mapFields
