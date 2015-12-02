@@ -2,7 +2,7 @@
 Simple PDO wrapper for agile yet safe ORM and direct SQL queries for PHP
 
 
-## Abstract
+## 1. Abstract
 Use this lib whenever you don't need a full-fledged ORM framework.
 
 What gazedb **does not** provide:
@@ -31,7 +31,7 @@ What gazedb **does** provide:
 In most cases, your gazedb Model Objects do not know how they relate to each other.
 The database intelligence remains in your hands (indexes, best way to join, when and how to fetch, etc.).
 
-## Model Object
+## 2. Model Object
 
 Create one class per table, as child class of `ModelObject`.
 
@@ -48,7 +48,7 @@ The ModelObject subclass **may** implement the following methods:
 - `mapPK`
 - `mapAutoIncrement`
 
-### Table name
+### 2.1. Table name
 
 
 ~~~~php
@@ -73,7 +73,7 @@ Usage:
 $query = "select * from ".Employee::table()." limit 10"
 ~~~~
 
-### Columns
+### 2.2. Columns
 Declare Class constants for the field names of your table.
 
 ~~~~php
@@ -122,7 +122,7 @@ public function setLastname($value) { return $this->assign(self::LASTNAME, $valu
 
 Make your setters chainable by hinting the return type to same class.
 
-### Primary key
+### 2.3. Primary key
 You can specify a primary key (incl. a multi-column one) by overriding the method:
 
 ~~~~php
@@ -144,7 +144,7 @@ A typical example of `mapPK` implementation is:
   }
 ~~~~
 
-### Auto-increment
+### 2.4. Auto-increment
 Provide an implementation for `mapAutoIncrement` if your table has an auto-numbering column which the
 database assigns alone at insertion time.
 
@@ -158,7 +158,7 @@ public function mapAutoIncrement() {
 }
 ~~~~
 
-## Build Your Queries
+## 3. Build Your Queries
 
 You write typical queries in your code by taking benefit from the `const` names.
 
@@ -186,7 +186,7 @@ you should take care of SQL injection protection.
 The only benefit you gain from writing your queries using the above recommendation, is
 consistency and syntax checking on the names of tables and fields.
 
-## Database object
+## 4. Database object
 
 gazedb lets you handle several simultaneous connections to different data sources.
 It uses the injectable Singleton pattern, with named instances.
@@ -210,12 +210,12 @@ which returns your plain and well-known PDO object, for you to execute:
 $recordset = $db->pdo()->query($query);
 ~~~~
 
-### CRUD operations
+### 4.1. CRUD operations
 
 In addition to the underlying PDO operations, made directly on the $database->pdo() instance,
 **gazedb** offers simple CRUD auto-mapping methods for those Model objects that map a primary key.
 
-#### Load
+#### 4.1.1. Load
 
 ~~~~php
 // "new" does not create anything in DB
@@ -234,7 +234,7 @@ echo $employee->getLastname();
 In case the record could not be found for specified primary key, the `Database::load` method
 will throw an `ObjectNotFoundException`.
 
-#### Update
+#### 4.1.2. Update
 
 Once you have a populated object, you can modify any field with its mutators, and save it back
 to the database with the `udpate` method.
@@ -254,7 +254,7 @@ still be issued without your knowing it.
 Likewise, `update` does not re-fetch the object's fields if they were changed in database since
 your previous call to `load`.
 
-#### Insert
+#### 4.1.3. Insert
 
 ~~~~php
 $employee = new Employee();
