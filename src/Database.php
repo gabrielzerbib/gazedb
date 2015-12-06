@@ -178,11 +178,12 @@ class Database
    * @param ModelObject $object
    * @param bool|false $loadFirst
    * @param array $sorting
+   * @param bool $forUpdate
    * @return bool
    * @throws MoreThanOneObjectException
    * @throws ObjectNotFoundException
    */
-  private function loadWithOptions(ModelObject $object, $loadFirst = false, array $sorting = [])
+  private function loadWithOptions(ModelObject $object, $loadFirst = false, array $sorting = [], $forUpdate = false)
   {
     $object->clean();
     $table = $object->table();
@@ -224,6 +225,12 @@ class Database
       $orderByClause = implode(', ', $orderPieces);
     }
 
+    // If we're commanded to select for update, append the sql keyword to the select instruction
+    $forUpdateKeyword = '';
+    if ($forUpdate) {
+      $forUpdateKeyword = 'for update';
+    }
+
     $query = "
       select
         $selectList
@@ -233,6 +240,7 @@ class Database
       $orderBy
         $orderByClause
       limit 2
+      $forUpdateKeyword
     ";
 
     $recordset = $this->pdo()->query($query);
@@ -264,6 +272,20 @@ class Database
   public function load(ModelObject $object)
   {
     return $this->loadWithOptions($object);
+  }
+
+  /**
+   * Performs a Select operation for specified object,
+   * while specifying to the DB engine that you wish to lock the record
+   * for potential update in the same transaction.
+   * @param ModelObject $object
+   * @return bool
+   * @throws MoreThanOneObjectException
+   * @throws ObjectNotFoundException
+   */
+  public function loadForUpdate(ModelObject $object)
+  {
+    return $this->loadWithOptions($object, false, [], true);
   }
 
   /**
