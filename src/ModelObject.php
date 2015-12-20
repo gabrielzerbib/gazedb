@@ -353,4 +353,16 @@ abstract class ModelObject {
     {
         return $this->columns;
     }
+
+    /**
+     * Returns a hash representation of the current state of the object,
+     * based on its record() values. This is useful in Edit forms, when
+     * you want to make sure that the object you're about to storing back to db
+     * is not in conflict with what the user thought he was modifying.
+     * @return string
+     */
+    public function shadow()
+    {
+        return md5(print_r($this->record(), true));
+    }
 }
