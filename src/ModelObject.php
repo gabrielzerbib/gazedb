@@ -347,11 +347,28 @@ abstract class ModelObject {
 
     /**
      * Returns the associative array representation of current field values
+     * You can provide an optional field name transformation map: [dbFieldName => representation key].
+     * @param array|null $fieldsMap
      * @return array
      */
-    public function record()
+    public function record(array $fieldsMap = null)
     {
-        return $this->columns;
+        // If no map, simply return the internal representation as is
+        if (null == $fieldsMap) {
+          return $this->columns;
+        }
+
+        // With a map, transform every key for which the map gives a transformed name
+        $result = [];
+        foreach ($this->columns as $key => $value) {
+          if (array_key_exists($key, $fieldsMap)) {
+            $result[$fieldsMap[$key]] = $value;
+          }
+          else {
+            $result[$key] = $value;
+          }
+        }
+        return $result;
     }
 
     /**
