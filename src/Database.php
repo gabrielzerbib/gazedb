@@ -30,6 +30,8 @@ class Database
   private $username;
   private $password;
   private $connectionName;
+  /** @var array */
+  private $pdoOptions;
 
 
   private function __construct($connectionName)
@@ -57,12 +59,14 @@ class Database
    * @param $dsn
    * @param $username
    * @param $password
+   * @param array|null $pdoOptions Optional array of options to pass to PDO constructor
    */
-  public function injectDsn($dsn, $username, $password)
+  public function injectDsn($dsn, $username, $password, array $pdoOptions = null)
   {
     $this->dsn = $dsn;
     $this->username = $username;
     $this->password = $password;
+    $this->pdoOptions = $pdoOptions;
   }
 
   /**
@@ -71,7 +75,7 @@ class Database
   public function pdo()
   {
     if (null == $this->pdo) {
-      $this->pdo = new \PDO($this->dsn, $this->username, $this->password);
+      $this->pdo = new \PDO($this->dsn, $this->username, $this->password, $this->pdoOptions);
       $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
       $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
     }
