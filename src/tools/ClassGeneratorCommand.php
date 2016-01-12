@@ -101,7 +101,7 @@ class ClassGeneratorCommand extends  Command
 
 
     $password = $input->getOption('password');
-    if (! $password) {
+    if ((! $password) && $dsn) {
       $helper = $this->getHelper('question');
       $question = new Question('Enter password: ', false);
       $question->setHidden(true);
