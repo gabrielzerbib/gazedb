@@ -82,6 +82,18 @@ class Database
     return $this->pdo;
   }
 
+  /**
+   * This is the only way to close a PDO connection, as per PHP manual.
+   * For it to work, you need to be careful not to capture the ->pdo() object
+   * in a variable by yourself, as the null assignment will only perform the connection termination
+   * if the property is the last reference to the resource.
+   * Caution: any reference to a statement (cursor) must also be closed!
+   */
+  public function terminate()
+  {
+    $this->pdo = null;
+  }
+
 
   /**
    * Inserts an entity record in the database, corresponding to the specified GAZE_ModelObject.
