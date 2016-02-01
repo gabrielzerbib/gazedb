@@ -152,23 +152,10 @@ class Database
 		";
 
 
-    $throw = function (\PDOException $ex = null) use ($query) {
-      $errorCode = $this->pdo()->errorInfo() [1];
-      $errorMsg = $this->pdo()->errorInfo() [2];
-
-      $errCodeDuplicateKey = constant(__NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\ErrorCodes::DUPLICATE_KEY');
-
-      if ($errorCode == $errCodeDuplicateKey) {
-        throw new DuplicateKeySQLException($query, $errorMsg, $ex);
-      }
-      throw new SQLException($query, $errorMsg, $errorCode, $ex);
-    };
-
     try {
-      if (false === $this->pdo()->exec($query)) {
-        $throw ();
-      }
+      $this->pdo()->exec($query);
     } catch (\PDOException $ex) {
+      $throw = $this->throwFunc($query);
       $throw ($ex);
     }
 
@@ -407,7 +394,12 @@ class Database
         $whereList
     ";
 
-    $affectedRows = $this->pdo()->exec($query);
+    try {
+      $affectedRows = $this->pdo()->exec($query);
+    } catch (\PDOException $ex) {
+      $throw = $this->throwFunc($query);
+      $throw ($ex);
+    }
 
     //Return Success if one and only one record was modified.
     if($affectedRows == 1) {
@@ -458,5 +450,20 @@ class Database
   {
     $clazz = __NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\DialectStructureManager';
     return new $clazz ($this);
+  }
+
+  private function throwFunc($query)
+  {
+    return function (\PDOException $ex = null) use ($query) {
+      $errorCode = $this->pdo()->errorInfo() [1];
+      $errorMsg = $this->pdo()->errorInfo() [2];
+
+      $errCodeDuplicateKey = constant(__NAMESPACE__.'\\dialects\\'.$this->getDriverName().'\\ErrorCodes::DUPLICATE_KEY');
+
+      if ($errorCode == $errCodeDuplicateKey) {
+        throw new DuplicateKeySQLException($query, $errorMsg, $ex);
+      }
+      throw new SQLException($query, $errorMsg, $errorCode, $ex);
+    };
   }
 }
