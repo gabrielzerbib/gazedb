@@ -382,4 +382,13 @@ abstract class ModelObject {
     {
         return md5(print_r($this->record(), true));
     }
+
+    /**
+     * Returns the selection list of all the field names of the current object.
+     * @return string
+     */
+    public static function selectAll()
+    {
+        return Database::selectClause(self::mapFields());
+    }
 }
