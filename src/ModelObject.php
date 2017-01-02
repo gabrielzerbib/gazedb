@@ -8,6 +8,8 @@ namespace gazedb;
 
 abstract class ModelObject {
 
+    private static $_accessorsMap = [];
+
     /**
      * Array of the name of the fields that have been
      * modified from their original DB value.
@@ -82,7 +84,7 @@ abstract class ModelObject {
      * @return array
      */
     public static function mapFields() {
-        return null;
+        throw new IncompleteModelClassException(get_called_class());
     }
     /**
      * Returns the name of the table.
@@ -384,11 +386,53 @@ abstract class ModelObject {
     }
 
     /**
-     * Returns the selection list of all the field names of the current object.
-     * @return string
+     * Catch-all function for the get/set accessors.
+     * The function resolves the underlying database field for specified get/setSomething() invocation,
+     * and caches the map for future use.
+     * @param $name
+     * @param $arguments
+     * @return ModelObject|mixed
+     * @throws \Exception
      */
-    public static function selectAll()
+    public function __call($name, $arguments)
     {
-        return Database::selectClause(self::mapFields());
+        $accessMode = substr($name, 0, 3);
+        if (($accessMode == 'get') || ($accessMode == 'set')) {
+
+
+            if (isset(self::$_accessorsMap[static::class])) {
+                $accessors = self::$_accessorsMap[static::class];
+            }
+            else {
+                // Build an associative array: CamelCasePropName => database_field
+                $accessors = array_combine(array_map(function ($field) {
+                    return str_replace('_', '', ucwords($field, '_'));
+                }, array_keys(static::mapFields())), array_keys(static::mapFields()));
+
+                self::$_accessorsMap[static::class] = $accessors;
+            }
+
+
+            // Retrieve which field is targated by our current get/set method
+            $methodPrincipal = substr($name, 3);
+            if (array_key_exists($methodPrincipal, $accessors)) {
+                $targetField = $accessors[$methodPrincipal];
+
+                // Field is found: work. Otherwise, an exception is thrown.
+
+                if ('get' == $accessMode) {
+                    return $this->column($targetField);
+                } else {
+                    return $this->assign($targetField, $arguments[0]);
+                }
+
+
+            }
+
+
+        }
+
+        throw new \Exception('Method not found: ' . static::class . '::' . $name);
+
     }
 }

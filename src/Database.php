@@ -67,6 +67,7 @@ class Database
     $this->username = $username;
     $this->password = $password;
     $this->pdoOptions = $pdoOptions;
+    return $this;
   }
 
   /**
@@ -417,15 +418,18 @@ class Database
    * @param array $fieldsMap
    * @param string $tablePrefix If specified, each item in the selected list is fully qualified with this table prefix.
    * @param string $aliasPrefix
-   * @return string comma-separated list of fields, suitable for the SELECT clause of a MySQL query.
+   * @return string comma-separated list of fields, suitable for the SELECT clause of an SQL query.
    */
-  public static function selectClause(array $fieldsMap, $tablePrefix = null, $aliasPrefix = null) {
+  public function selectClause(array $fieldsMap, $tablePrefix = null, $aliasPrefix = null) {
     $fields = array_keys($fieldsMap);
     for($i = 0; $i < count($fields); ++$i) {
       $initialName = $fields[$i];
-      if( ($initialName[0] != '`') && (null == $tablePrefix) ) {
+
+      // Wrap field names in back-quotes for MySql database
+      if( ($initialName[0] != '`') && (null == $tablePrefix) && ('mysql' == $this->getDriverName()) ) {
         $fields[$i] = '`'.$initialName.'`';
       }
+
       if($tablePrefix !== null) {
         $fields[$i] = $tablePrefix . '.' . $fields[$i];
       }
@@ -436,8 +440,17 @@ class Database
     return implode(',', $fields);
   }
 
+    /**
+     * Returns the selection list of all the field names of the current object.
+     * @return string
+     */
+    public function select($modelClass)
+    {
+        return $this->selectClause($modelClass::mapFields());
+    }
 
-  public function getDriverName()
+
+    public function getDriverName()
   {
     return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
   }

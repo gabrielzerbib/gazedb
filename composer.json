@@ -3,8 +3,8 @@
   "type": "library",
   "description": "Simple PDO wrapper for agile yet safe ORM and direct queries",
   "keywords": ["database","pdo","query"],
-  "homepage": "https://github.com/gabrielzerbib/gazedb",
-  "version": "2.0-dev",
+  "homepage": "https://github.com/zzgab/gazedb",
+  "version": "3.0-dev",
   "license": ["GPL-3.0"],
   "authors": [
     {
@@ -15,7 +15,7 @@
     }
   ],
   "require": {
-    "php": ">=5.4.0"
+    "php": ">=5.6.0"
   },
   "require-dev": {
     "symfony/console": "3.0.0"
