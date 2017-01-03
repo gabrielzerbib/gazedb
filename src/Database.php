@@ -303,8 +303,10 @@ class Database
      * @param ModelObject $object
      * @return boolean
      */
-    public function delete(& $object)
+    public function delete($object)
     {
+        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+
         $object->clean();
         $table = $object->table();
 
@@ -317,13 +319,13 @@ class Database
             } else {
                 $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
             }
-            $whereFields[] = "`$table`.`$whereKey` $whereCompareAndValue";
+            $whereFields[] = "${identifierWrapper}$table${identifierWrapper}.${identifierWrapper}$whereKey${identifierWrapper} $whereCompareAndValue";
         }
         $whereList = implode(' and ', $whereFields);
 
         $query = "
       delete
-      from `$table`
+      from ${identifierWrapper}$table${identifierWrapper}
       where
         $whereList
     ";
