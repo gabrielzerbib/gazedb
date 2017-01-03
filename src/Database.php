@@ -119,7 +119,7 @@ class Database
 
         $autoIncrementField = $object->mapAutoIncrement();
 
-        $indentifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
 
         $insertFields = array();
         $insertValues = array();
@@ -140,7 +140,7 @@ class Database
                 $insertValues[] = $this->pdo()->quote($insertValue);
             }
 
-            $insertFields[] = $indentifierWrapper . str_replace('`', '', $dirtyField) . $indentifierWrapper;
+            $insertFields[] = $identifierWrapper . str_replace('`', '', $dirtyField) . $identifierWrapper;
 
         }
 
@@ -150,7 +150,7 @@ class Database
 
         //Perform the insert query.
         $query = "
-      insert into ${indentifierWrapper}${table}${indentifierWrapper} ( $insertFieldsList )
+      insert into ${identifierWrapper}${table}${identifierWrapper} ( $insertFieldsList )
         values ( $insertValuesList )
 		";
 
@@ -191,6 +191,9 @@ class Database
      */
     private function loadWithOptions(ModelObject $object, $loadFirst = false, array $sorting = [], $forUpdate = false)
     {
+
+        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+
         $object->clean();
         $table = $object->table();
 
@@ -198,7 +201,7 @@ class Database
         $selectFields = array_keys($object->mapFields());
         //prefix the field names with the name of the table:
         for ($i = 0; $i < count($selectFields); ++$i) {
-            $selectFields[$i] = "`$table`." . $selectFields[$i];
+            $selectFields[$i] = "${identifierWrapper}$table${identifierWrapper}." . $selectFields[$i];
         }
         $selectList = implode(', ', $selectFields);
 
@@ -213,7 +216,7 @@ class Database
                 $whereCompareAndValue = " = $whereValue";
             else
                 $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
-            $whereFields[] = "`$table`.`$whereKey` $whereCompareAndValue";
+            $whereFields[] = "${identifierWrapper}$table${identifierWrapper}.${identifierWrapper}$whereKey${identifierWrapper} $whereCompareAndValue";
         }
         $whereList = implode(' and ', $whereFields);
 
@@ -239,7 +242,7 @@ class Database
         $query = "
       select
         $selectList
-      from `$table`
+      from ${identifierWrapper}$table${identifierWrapper}
       where
         $whereList
       $orderBy
