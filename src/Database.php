@@ -126,6 +126,11 @@ class Database
         foreach ($dirtyFields as $dirtyField) {
             $insertValue = $object->column($dirtyField);
 
+            if (is_callable($insertValue)) {
+                $insertValue = $insertValue ();
+                $object->assign($dirtyField, $insertValue);
+            }
+
             if (null === $insertValue) {
                 if ($dirtyField != $autoIncrementField) {
                     $insertValues[] = 'null';

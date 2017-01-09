@@ -197,7 +197,7 @@ abstract class ModelObject {
      * @param mixed $value
      * @return ModelObject
      */
-    protected function assign($fieldName, $value) {
+    public function assign($fieldName, $value) {
         $this->columns[$fieldName] = $value;
         $this->dirty($fieldName);
         return $this;
