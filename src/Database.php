@@ -119,7 +119,7 @@ class Database
 
         $autoIncrementField = $object->mapAutoIncrement();
 
-        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+        $identifierWrapper = $this->getIdentifierWrapper();
 
         $insertFields = array();
         $insertValues = array();
@@ -140,7 +140,7 @@ class Database
                 $insertValues[] = $this->pdo()->quote($insertValue);
             }
 
-            $insertFields[] = $identifierWrapper . str_replace('`', '', $dirtyField) . $identifierWrapper;
+            $insertFields[] = $identifierWrapper . $dirtyField . $identifierWrapper;
 
         }
 
@@ -192,7 +192,7 @@ class Database
     private function loadWithOptions(ModelObject $object, $loadFirst = false, array $sorting = [], $forUpdate = false)
     {
 
-        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+        $identifierWrapper = $this->getIdentifierWrapper();
 
         $object->clean();
         $table = $object->table();
@@ -305,7 +305,7 @@ class Database
      */
     public function delete($object)
     {
-        $identifierWrapper = $this->getDriverName() == 'mysql' ? '`' : '';
+        $identifierWrapper = $this->getIdentifierWrapper();
 
         $object->clean();
         $table = $object->table();
@@ -344,6 +344,8 @@ class Database
      */
     public function update(ModelObject $object, $criteria = null)
     {
+        $identifierWrapper = $this->getIdentifierWrapper();
+
         $table = $object->table();
 
         //Prepare the SET clause
@@ -361,7 +363,7 @@ class Database
                 $setValue = 'null';
             else
                 $setValue = $this->pdo()->quote($setValue);
-            $setFields[] = "`$dirtyField` = $setValue";
+            $setFields[] = "${identifierWrapper}${dirtyField}${identifierWrapper} = $setValue";
         }
 
         $setList = implode(', ', $setFields);
@@ -384,13 +386,13 @@ class Database
             } else {
                 $whereCompareAndValue = " = " . $this->pdo()->quote($whereValue);
             }
-            $whereFields[] = "`$whereKey` $whereCompareAndValue";
+            $whereFields[] = "${identifierWrapper}${whereKey}${identifierWrapper} $whereCompareAndValue";
         }
         $whereList = implode(' and ', $whereFields);
 
         $query = "
       update
-        `$table`
+        ${identifierWrapper}${table}${identifierWrapper}
       set
         $setList
       where
@@ -424,13 +426,15 @@ class Database
      */
     public function selectClause(array $fieldsMap, $tablePrefix = null, $aliasPrefix = null)
     {
+        $identifierWrapper = $this->getIdentifierWrapper();
+
         $fields = array_keys($fieldsMap);
         for ($i = 0; $i < count($fields); ++$i) {
             $initialName = $fields[$i];
 
             // Wrap field names in back-quotes for MySql database
-            if (($initialName[0] != '`') && (null == $tablePrefix) && ('mysql' == $this->getDriverName())) {
-                $fields[$i] = '`' . $initialName . '`';
+            if ((null == $tablePrefix) && ($identifierWrapper)) {
+                $fields[$i] = $identifierWrapper . $initialName . $identifierWrapper;
             }
 
             if ($tablePrefix !== null) {
@@ -458,6 +462,13 @@ class Database
         return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
     }
 
+    /**
+     * @return string The optional wrapper character around an identifier
+     */
+    public function getIdentifierWrapper()
+    {
+        return $this->getDriverName() == 'mysql' ? '`' : '';
+    }
 
     /**
      * @return StructureManager
