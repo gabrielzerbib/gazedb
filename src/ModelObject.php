@@ -47,7 +47,7 @@ abstract class ModelObject {
     }
 
     /**
-     * @param PDO $record Can be an associative array as well.
+     * @param object|array $record Object with columns as properties, or array with columns as keys.
      * @param string $prefix The optional prefix to every natural object's field, in the recordset column names.
      * @param array $columnTranslator Optional. An associative array mapping recordset columns to real object's fields.
      */
@@ -134,6 +134,7 @@ abstract class ModelObject {
      * in order to be able to build the Where clause of a subsequent
      * Update query.
      *
+     * @param string|null $insertID
      * @return ModelObject
      */
     public function clean($insertID = null) {
@@ -208,10 +209,11 @@ abstract class ModelObject {
      *
      * @param string $columnName
      * @return mixed
+     * @throws UnmappedFieldException
      */
     public function column($columnName) {
         if(! array_key_exists($columnName, $this->columns)) {
-            throw new UnmappedFieldException($columnName, $this->mapTable(), get_class($this));
+            throw new UnmappedFieldException($columnName, static::table(), get_class($this));
         }
         return $this->columns[$columnName];
     }
@@ -357,18 +359,18 @@ abstract class ModelObject {
     {
         // If no map, simply return the internal representation as is
         if (null == $fieldsMap) {
-          return $this->columns;
+            return $this->columns;
         }
 
         // With a map, transform every key for which the map gives a transformed name
         $result = [];
         foreach ($this->columns as $key => $value) {
-          if (array_key_exists($key, $fieldsMap)) {
-            $result[$fieldsMap[$key]] = $value;
-          }
-          else {
-            $result[$key] = $value;
-          }
+            if (array_key_exists($key, $fieldsMap)) {
+                $result[$fieldsMap[$key]] = $value;
+            }
+            else {
+                $result[$key] = $value;
+            }
         }
         return $result;
     }
@@ -404,10 +406,33 @@ abstract class ModelObject {
                 $accessors = self::$_accessorsMap[static::class];
             }
             else {
+                // Firstly
                 // Build an associative array: CamelCasePropName => database_field
                 $accessors = array_combine(array_map(function ($field) {
                     return str_replace('_', '', ucwords($field, '_'));
                 }, array_keys(static::mapFields())), array_keys(static::mapFields()));
+
+
+                // Then, override the default mapping with what is explicitly defined
+                // on the mapFields method phpdoc block
+
+                $classReflector = new \ReflectionClass($this);
+                $methodReflector = new \ReflectionMethod($this, 'mapFields');
+                $docBlock = $methodReflector->getDocComment();
+                // We'll extract the @column lines in the doc block:
+                // they're in the form:
+                //  @column <CONST_NAME> <accessor>
+                // where <CONST_NAME> is the const declared in the class, holding the column name,
+                // and <accessor> is the name on which the accessor is based (eg. getAccessor)
+                foreach (explode("\n", $docBlock) as $line) {
+                    $matches = null;
+                    if (preg_match('#@column\\s+([^\\s]+)\\s+([^\\s]+)#', $line, $matches)) {
+                        $accessorName = ucfirst($matches[2]);
+                        $fieldName = $classReflector->getConstant($matches[1]);
+                        $accessors[$accessorName] = $fieldName;
+                    }
+                }
+
 
                 self::$_accessorsMap[static::class] = $accessors;
             }
