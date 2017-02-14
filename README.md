@@ -109,7 +109,7 @@ public static function mapFields()
 ~~~~
 
 
-And you must write mutators for your columns:
+And you may write mutators for your columns:
 
 ~~~~php
 public function getLastname() { return $this->column(self::LASTNAME); }
@@ -121,6 +121,48 @@ public function setLastname($value) { return $this->assign(self::LASTNAME, $valu
 ~~~~
 
 Make your setters chainable by hinting the return type to same class.
+
+#### Magic Accessors
+You are not required to write explicit accessors. Instead, you can leverage the magic
+`__get` and `__set` methods by declaring the mutators in the DocBlock of the class:
+
+~~~~php
+/**
+ * @method string   getLastname()
+ * @method Employee setLastname(string $value)
+ * @method int      getSalary()
+ * @method Employee setSalary(int $value)
+ */
+class Employee extends ModelObject
+{
+ ...
+}
+~~~~
+
+By doing so, calling `$employee->getSalary()` will resolve to returning the value for
+ column `salary`, following a camel-case, lower case first, naming convention. Underscores
+ are discarded and used as camel-case word separator.
+
+
+Alternatively, if the name of the fields are not human-readable and you still wish to not
+develop explicitly your mutators, you can declare `@column` mappings in the DocBlock of 
+the `mapFields` method:
+
+~~~~php
+  /**
+   * @column <CONST_NAME> <accessor_name>
+   * @column ... ...
+   */
+  public static function mapFields()
+  {
+    ...
+  }
+~~~~
+
+This will instruct the Magic resolution that the field whose name is defined in const *CONST_NAME* of your class,
+yields to a pair of accessors `getAccessorName()` and `setAccessorName()` with the same naming
+convention as above.
+
 
 ### 2.3. Primary key
 You can specify a primary key (incl. a multi-column one) by overriding the method:
