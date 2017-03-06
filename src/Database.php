@@ -105,7 +105,6 @@ class Database
      * is assigned with the new id.
      *
      * @param ModelObject $object
-     * @return integer
      * @throws DuplicateKeySQLException
      */
     public function insert(ModelObject $object)
@@ -167,11 +166,13 @@ class Database
             $throw ($ex);
         }
 
-        $insertID = $this->pdo()->lastInsertId();
+        if ($autoIncrementField) {
+            $insertID = $this->pdo()->lastInsertId();
+        }
+        else {
+            $insertID = null;
+        }
         $object->clean($insertID);
-
-        //Return the inserted id
-        return $insertID;
     }
 
     /**
@@ -484,8 +485,17 @@ class Database
         return new $clazz ($this);
     }
 
+    /**
+     * @param $query
+     * @return \Closure
+     */
     private function throwFunc($query)
     {
+        /**
+         * @param \PDOException|null $ex
+         * @throws DuplicateKeySQLException
+         * @throws SQLException
+         */
         return function (\PDOException $ex = null) use ($query) {
             $errorCode = $this->pdo()->errorInfo() [1];
             $errorMsg = $this->pdo()->errorInfo() [2];

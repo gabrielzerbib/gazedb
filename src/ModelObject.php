@@ -140,7 +140,7 @@ abstract class ModelObject {
     public function clean($insertID = null) {
         //Assign the passed arugment
         //to the field mapped as the auto-increment field of the object.
-        if((null != $this->mapAutoIncrement()) && (null != $insertID))
+        if ((null != $insertID) && (null != $this->mapAutoIncrement()))
             $this->assign($this->mapAutoIncrement(), $insertID);
 
         $this->dirty = array();
