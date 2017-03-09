@@ -58,11 +58,7 @@ abstract class ModelObject {
         //so that these copies will build up the proper Where clause in a subsequent Update.
         // Force the name of columns to lowercase.
         $this->columns = $this->mapFields();
-        $pkeys = $this->mapPK();
-        $this->pk = array();
-        foreach($pkeys as $key) {
-            $this->pk[$key] = null;
-        }
+        $this->pk = array_fill_keys($this->mapPK(), null);
 
         if(null !== $record) {
             $this->wrap($record, $prefix, $columnTranslator);
@@ -116,10 +112,6 @@ abstract class ModelObject {
      * @return array
      */
     public function getInitialPK() {
-        //Verifier si on doit retourner un tableau simple des clés,
-        //ou un associatif champ=>valeur.
-        //Regarder partout où cette méthode est utilisée, et corriger les GAZE_Database::load et update.
-        //Dans update, c'est un champ=>valeur qui est attendu.
         return $this->pk;
     }
 

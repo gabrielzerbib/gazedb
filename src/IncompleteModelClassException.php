@@ -5,8 +5,12 @@ use \Exception;
 
 class IncompleteModelClassException extends Exception
 {
-  public function __construct($class)
+    /**
+     * @param string $class
+     * @param string $message
+     */
+    public function __construct($class, $message = '')
   {
-    parent::__construct($class);
+    parent::__construct($message ? $class . ': ' . $message : $class);
   }
 }

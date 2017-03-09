@@ -56,10 +56,11 @@ class Database
      * This is how you pass the DSN to the connection. The connection itself is not attempted until
      * the first effective use of the PDO object.
      *
-     * @param $dsn
-     * @param $username
-     * @param $password
+     * @param string $dsn
+     * @param string $username
+     * @param string $password
      * @param array|null $pdoOptions Optional array of options to pass to PDO constructor
+     * @return $this
      */
     public function injectDsn($dsn, $username, $password, array $pdoOptions = null)
     {
@@ -175,27 +176,14 @@ class Database
         $object->clean($insertID);
     }
 
-    /**
-     * @param ModelObject $object
-     * @param array $sorting
-     * @return bool
-     * @throws ObjectNotFoundException
-     */
-    public function loadFirst(ModelObject $object, array $sorting = [])
-    {
-        return $this->loadWithOptions($object, true, $sorting);
-    }
 
     /**
      * @param ModelObject $object
-     * @param bool|false $loadFirst
-     * @param array $sorting
      * @param bool $forUpdate
      * @return bool
-     * @throws MoreThanOneObjectException
      * @throws ObjectNotFoundException
      */
-    private function loadWithOptions(ModelObject $object, $loadFirst = false, array $sorting = [], $forUpdate = false)
+    private function loadWithOptions(ModelObject $object, $forUpdate = false)
     {
 
         $identifierWrapper = $this->getIdentifierWrapper();
@@ -214,6 +202,9 @@ class Database
 
         //Prepare the WHERE clause
         $whereKeys = $object->getInitialPK();
+        if (0 == count($whereKeys)) {
+            throw new IncompleteModelClassException(get_class($object), 'mapPK is mandatory to load an object.');
+        }
         $whereFields = array();
         foreach ($whereKeys as $whereKey => $whereValue) {
             if (null === $whereValue)
@@ -227,18 +218,6 @@ class Database
         $whereList = implode(' and ', $whereFields);
 
 
-        // If we're only loading the first occurrence of a given object's example.
-        // we can optionally sort by the 'field' => 'asc|desc' prescription in $sorting.
-        $orderBy = '';
-        $orderByClause = '';
-        if ($loadFirst && count($sorting)) {
-            $orderBy = 'order by';
-            $orderPieces = array_map(function ($fieldName, $direction) {
-                return $fieldName . ' ' . $direction;
-            }, array_keys($sorting), array_values($sorting));
-            $orderByClause = implode(', ', $orderPieces);
-        }
-
         // If we're commanded to select for update, append the sql keyword to the select instruction
         $forUpdateKeyword = '';
         if ($forUpdate) {
@@ -251,9 +230,7 @@ class Database
       from ${identifierWrapper}$table${identifierWrapper}
       where
         $whereList
-      $orderBy
-        $orderByClause
-      limit 2
+      limit 1
       $forUpdateKeyword
     ";
 
@@ -261,17 +238,12 @@ class Database
 
 
         $record = $recordset->fetch(\PDO::FETCH_ASSOC);
+        $recordset->closeCursor();
 
         if (null == $record) {
-            $recordset->closeCursor();
             throw new ObjectNotFoundException($query, get_class($object), $object->getInitialPK());
         } // Optionally throw a "more than one object found" in case of load() normal (not first)
-        else if ((!$loadFirst) && (null != ($recordset->fetch()))) {
-            $recordset->closeCursor();
-            throw new MoreThanOneObjectException($query);
-        }
 
-        $recordset->closeCursor();
         $object->wrap($record);
         return true;
     }
@@ -279,7 +251,6 @@ class Database
     /**
      * @param ModelObject $object
      * @return bool
-     * @throws MoreThanOneObjectException
      * @throws ObjectNotFoundException
      */
     public function load(ModelObject $object)
@@ -293,12 +264,11 @@ class Database
      * for potential update in the same transaction.
      * @param ModelObject $object
      * @return bool
-     * @throws MoreThanOneObjectException
      * @throws ObjectNotFoundException
      */
     public function loadForUpdate(ModelObject $object)
     {
-        return $this->loadWithOptions($object, false, [], true);
+        return $this->loadWithOptions($object, true);
     }
 
     /**
@@ -405,6 +375,7 @@ class Database
         $whereList
     ";
 
+        $affectedRows = 0;
         try {
             $affectedRows = $this->pdo()->exec($query);
         } catch (\PDOException $ex) {
@@ -453,23 +424,14 @@ class Database
         return implode(',', $fields);
     }
 
-    /**
-     * Returns the selection list of all the field names of the current object.
-     * @return string
-     */
-    public function select($modelClass)
-    {
-        return $this->selectClause($modelClass::mapFields());
-    }
-
-
     public function getDriverName()
     {
         return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
     }
 
     /**
-     * @return string The optional wrapper character around an identifier
+     * The optional wrapper character around an identifier
+     * @return string
      */
     public function getIdentifierWrapper()
     {
