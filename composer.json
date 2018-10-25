@@ -4,8 +4,8 @@
   "description": "Simple PDO wrapper for agile yet safe ORM and direct queries",
   "keywords": ["database","pdo","query"],
   "homepage": "https://github.com/zzgab/gazedb",
-  "version": "3.0-dev",
-  "license": ["GPL-3.0"],
+  "version": "3.0",
+  "license": ["GPL-3.0", "MIT"],
   "authors": [
     {
       "name": "Gabriel Zerbib",
