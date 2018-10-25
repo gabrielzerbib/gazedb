@@ -13,7 +13,7 @@ namespace gazedb;
  * anywhere in the app, when the DB is needed,
  * just use ->get()->pdo()
  */
-class Database
+class Database implements IDatabase
 {
 
     /**
@@ -107,6 +107,7 @@ class Database
      *
      * @param ModelObject $object
      * @throws DuplicateKeySQLException
+     * @throws UnmappedFieldException
      */
     public function insert(ModelObject $object)
     {
